@@ -1,6 +1,7 @@
 require_relative 'db_connection'
 require_relative '01_mass_object'
 require 'active_support/inflector'
+require 'debugger'
 
 class MassObject
   def self.parse_all(results)
@@ -14,15 +15,27 @@ end
 
 class SQLObject < MassObject
   def self.columns
-    columns = DBConnection.execute(<<-SQL)
-    SELECT
-      column_name
-    FROM
-      USER_TAB_COLUMNS
-    WHERE
-      table_name = #{self.table_name}
+    results = DBConnection.execute(<<-SQL)
+      SELECT
+        *
+      FROM
+        #{self.table_name}
+      LIMIT
+        1
     SQL
-    columns.map(&:to_sym)
+    columns = results.first.map { |column| column.first.to_sym }
+    
+    columns.each do |column|
+      define_method(column) do
+        self.attributes[column]
+      end
+      
+      define_method("#{column}=") do |new_val|
+        self.attributes[column] = new_val
+      end
+    end
+    
+    columns
   end
 
   def self.table_name=(table_name)
@@ -44,45 +57,64 @@ class SQLObject < MassObject
   end
 
   def self.find(id)
-    DBConnection.execute(<<-SQL, id)
+    results = DBConnection.execute(<<-SQL, id)
       SELECT
         *
       FROM
         #{self.table_name}
       WHERE
         id = ?
+      LIMIT
+        1
     SQL
+    self.parse_all(results).first
   end
 
   def attributes
-    unless @attributes
-      @attributes = {}
-      
-      self.class.columns.each do |column|
-        @attributes[column] = nil
-      end
-    end
-    @attributes
+    @attributes ||= {}
   end
 
   def insert
-    # ...
+    DBConnection.execute(<<-SQL, *attributes.values)
+      INSERT INTO
+        #{self.class.table_name} (#{self.attributes.keys.join(', ')})
+      VALUES
+        (#{self.attributes.keys.map {'?'}.join(', ')})
+    SQL
+    self.id = DBConnection.last_insert_row_id
   end
 
   def initialize(attr_hash = nil)
-    @attributes = attr_hash if attr_hash
-    attributes
+    if attr_hash
+      attr_hash.each do |k, v|
+        column = k.to_sym
+        if self.class.columns.include?(column)
+          self.send("#{column}=", v)
+        end
+      end
+    end
   end
 
   def save
-    # ...
+    if self.class.find(self.id)
+      update
+    else
+      insert
+    end
   end
 
   def update
-    # ...
+    DBConnection.execute(<<-SQL, *attributes.values, self.id)
+      UPDATE
+        #{self.class.table_name}
+      SET
+        #{ self.attributes.keys.map { |k| "#{k} = ?" }.join(', ') }
+      WHERE
+        id = ?
+    SQL
   end
 
   def attribute_values
-    # ...
+    @attributes.values
   end
 end
