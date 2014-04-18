@@ -1,7 +1,6 @@
 require_relative 'db_connection'
 require_relative '01_mass_object'
 require 'active_support/inflector'
-require 'debugger'
 
 class MassObject
   def self.parse_all(results)
@@ -84,15 +83,13 @@ class SQLObject < MassObject
     self.id = DBConnection.last_insert_row_id
   end
 
-  def initialize(attr_hash = nil)
-    if attr_hash
-      attr_hash.each do |k, v|
-        column = k.to_sym
-        if self.class.columns.include?(column)
-          self.send("#{column}=", v)
-        else
-          raise "unknown attribute #{attr_name}"
-        end
+  def initialize(attr_hash = {})
+    attr_hash.each do |k, v|
+      column = k.to_sym
+      if self.class.columns.include?(column)
+        self.send("#{column}=", v)
+      else
+        raise "unknown attribute #{attr_name}"
       end
     end
   end
@@ -108,7 +105,7 @@ class SQLObject < MassObject
   def update
     DBConnection.execute(<<-SQL, *attributes.values, self.id)
       UPDATE
-        #{self.class.table_name}
+        #{ self.class.table_name }
       SET
         #{ self.attributes.keys.map { |k| "#{k} = ?" }.join(', ') }
       WHERE
@@ -117,6 +114,23 @@ class SQLObject < MassObject
   end
 
   def attribute_values
-    @attributes.values
+    attributes.values
   end
 end
+
+# class Turtle
+#   attr_writer :name  
+#   def initialize
+#     @name = "gizmo"
+#   end
+#   def meow(name)
+#     name
+#     self.name = "new_name"
+#   end
+# end
+# c = Turtle.new
+
+
+
+
+

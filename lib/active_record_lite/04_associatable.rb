@@ -1,6 +1,5 @@
 require_relative '03_searchable'
 require 'active_support/inflector'
-require 'debugger'
 
 # Phase IVa
 class AssocOptions
@@ -57,7 +56,7 @@ module Associatable
     define_method(name) do
       pk = self.class.assoc_options[name].send(:primary_key)
       m_class = self.class.assoc_options[name].model_class
-      m_class.where(pk => self.id).first
+      m_class.where(pk => id).first
     end
   end
 
@@ -67,7 +66,7 @@ module Associatable
     define_method(name) do
       fk = self.class.assoc_options[name].send(:foreign_key)
       m_class = self.class.assoc_options[name].model_class
-      m_class.where(fk => self.id)
+      m_class.where(fk => id)
     end
   end
 

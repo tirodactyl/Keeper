@@ -9,18 +9,25 @@ module Associatable
       through_options = self.class.assoc_options[through_name]
       source_options = through_options.model_class.assoc_options[source_name]
       
-      results = DBConnection.execute(<<-SQL, self.send(through_options.send(:foreign_key)))
+      source_table = source_options.table_name
+      through_table = through_options.table_name
+      source_foreign_key = source_options.send(:foreign_key)
+      source_primary_key = source_options.send(:primary_key)
+      through_foreign_key = through_options.send(:foreign_key)
+      through_primary_key = through_options.send(:primary_key)
+      
+      results = DBConnection.execute(<<-SQL, self.send(through_foreign_key))
         SELECT
-          #{source_options.table_name}.*
+          #{source_table}.*
         FROM
-          #{source_options.table_name}
+          #{source_table}
         JOIN
-          #{through_options.table_name}
-          ON
-          #{through_options.table_name}.#{source_options.send(:foreign_key)} =
-          #{source_options.table_name}.id
+          #{through_table}
+        ON
+          #{through_table}.#{source_foreign_key} =
+          #{source_options.table_name}.#{source_primary_key}
         WHERE
-          #{through_options.table_name}.id = ?
+          #{through_table}.#{through_primary_key} = ?
       SQL
       
       source_options.model_class.parse_all(results).first
