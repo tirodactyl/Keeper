@@ -90,6 +90,8 @@ class SQLObject < MassObject
         column = k.to_sym
         if self.class.columns.include?(column)
           self.send("#{column}=", v)
+        else
+          raise "unknown attribute #{attr_name}"
         end
       end
     end
