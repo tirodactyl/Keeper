@@ -1,3 +1,11 @@
-After the project, you can review the solution here:
+#Keeper
 
-* https://github.com/appacademy-solutions/active_record_lite/tree/solution
+A basic rewrite of ActiveRecord. Written with the intention to learn more about the inner workings of ActiveRecord.
+
+Heavy use of metaprogramming and module extension.
+
+Includes:
+- SQL DB connection
+- SQL query, insert, remove, etc
+- attr_accessor functionality
+- associations between models
